@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Todo App</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --background: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+            --card-bg: #f3f4f6;
+        }
+
+        [data-theme="dark"] {
+            --primary: #3b82f6;
+            --background: #1f2937;
+            --text: #f9fafb;
+            --border: #374151;
+            --card-bg: #4b5563;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui;
+            background-color: var(--background);
+            color: var(--text);
+            transition: background 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .todo-form {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: 1fr auto auto;
+            margin-bottom: 2rem;
+        }
+
+        .todo-input, .category-select {
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--background);
+            color: var(--text);
+        }
+
+        .add-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-btn {
+            background: none;
+            border: 2px solid var(--border);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .todo-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--card-bg);
+            border-radius: 8px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .todo-content {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: rgba(0,0,0,0.1);
+        }
+
+        .category-tag {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 999px;
+            background: var(--primary);
+            color: white;
+        }
+
+        @media (max-width: 600px) {
+            .todo-form {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📝 Modern To-do App</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+        </header>
+
+        <form class="todo-form" id="todoForm">
+            <input type="text" class="todo-input" placeholder="New task...">
+            <select class="category-select" id="categorySelect">
+                <option value="personal">Personal</option>
+                <option value="work">Work</option>
+                <option value="shopping">Shopping</option>
+            </select>
+            <button type="submit" class="add-btn">Add Task</button>
+        </form>
+
+        <div class="filters" id="filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="active">Active</button>
+            <button class="filter-btn" data-filter="completed">Completed</button>
+        </div>
+
+        <div class="todo-list" id="todoList"></div>
+    </div>
+<footer>
+        <p>© 2025 Todo List App. Created by Nedi Usman. All rights reserved.</p>
+    </footer>
+    <script>
+        class TodoList {
+            constructor() {
+                this.todos = JSON.parse(localStorage.getItem('todos')) || [];
+                this.currentFilter = 'all';
+                this.init();
+            }
+
+            init() {
+                this.render();
+                document.getElementById('todoForm').addEventListener('submit', this.addTodo.bind(this));
+                document.getElementById('filters').addEventListener('click', this.setFilter.bind(this));
+                document.getElementById('todoList').addEventListener('click', this.handleActions.bind(this));
+            }
+
+            addTodo(e) {
+                e.preventDefault();
+                const input = document.querySelector('.todo-input');
+                const category = document.getElementById('categorySelect').value;
+                
+                if (!input.value.trim()) return;
+
+                this.todos.push({
+                    id: Date.now(),
+                    text: input.value.trim(),
+                    category,
+                    completed: false,
+                    createdAt: new Date()
+                });
+
+                input.value = '';
+                this.saveTodos();
+                this.render();
+            }
+
+            handleActions(e) {
+                const todoItem = e.target.closest('.todo-item');
+                if (!todoItem) return;
+                
+                const id = Number(todoItem.dataset.id);
+                const todo = this.todos.find(t => t.id === id);
+
+                if (e.target.classList.contains('delete-btn')) {
+                    this.todos = this.todos.filter(t => t.id !== id);
+                } else if (e.target.classList.contains('toggle-btn')) {
+                    todo.completed = !todo.completed;
+                } else if (e.target.classList.contains('edit-btn')) {
+                    const newText = prompt('Edit task:', todo.text);
+                    if (newText) todo.text = newText.trim();
+                }
+
+                this.saveTodos();
+                this.render();
+            }
+
+            setFilter(e) {
+                if (!e.target.matches('.filter-btn')) return;
+                this.currentFilter = e.target.dataset.filter;
+                document.querySelectorAll('.filter-btn').forEach(btn => 
+                    btn.classList.toggle('active', btn === e.target)
+                );
+                this.render();
+            }
+
+            saveTodos() {
+                localStorage.setItem('todos', JSON.stringify(this.todos));
+            }
+
+            render() {
+                const filteredTodos = this.todos.filter(todo => {
+                    if (this.currentFilter === 'active') return !todo.completed;
+                    if (this.currentFilter === 'completed') return todo.completed;
+                    return true;
+                });
+
+                const html = filteredTodos.map(todo => `
+                    <div class="todo-item" data-id="${todo.id}">
+                        <div class="todo-content">
+                            <button class="action-btn toggle-btn">
+                                ${todo.completed ? '✅' : '⬜'}
+                            </button>
+                            <span style="${todo.completed ? 'opacity: 0.6; text-decoration: line-through' : ''}">
+                                ${todo.text}
+                            </span>
+                            <span class="category-tag">${todo.category}</span>
+                        </div>
+                        <div class="todo-actions">
+                            <button class="action-btn edit-btn">✏️</button>
+                            <button class="action-btn delete-btn">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                document.getElementById('todoList').innerHTML = html || '<p>No tasks found!</p>';
+            }
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            const root = document.documentElement;
+            root.setAttribute('data-theme', 
+                root.getAttribute('data-theme') === 'light' ? 'dark' : 'light'
+            );
+        }
+
+        // Initialize App
+        const todoApp = new TodoList();
+    </script>
+</body>
+</html>
